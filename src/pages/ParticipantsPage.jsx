@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import AddEditParticipantForm from '../components/AddEditParticipantForm';
 
 function ParticipantsPage({ onLogout }) {
   const [participants, setParticipants] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState(null);
 
   // Placeholder: Fetch participants from backend API
   useEffect(() => {
@@ -24,6 +27,39 @@ function ParticipantsPage({ onLogout }) {
     ]);
   }, []);
 
+  const handleAddClick = () => {
+    setEditingParticipant(null);
+    setShowForm(true);
+  };
+
+  const handleEditClick = (participant) => {
+    setEditingParticipant(participant);
+    setShowForm(true);
+  };
+
+  const handleDeleteClick = (id) => {
+    if (window.confirm('Are you sure you want to delete this participant?')) {
+      setParticipants(participants.filter((p) => p.id !== id));
+    }
+  };
+
+  const handleSave = (participant) => {
+    if (editingParticipant) {
+      // Edit existing participant
+      setParticipants(participants.map((p) => (p.id === participant.id ? participant : p)));
+    } else {
+      // Add new participant
+      setParticipants([...participants, participant]);
+    }
+    setShowForm(false);
+    setEditingParticipant(null);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingParticipant(null);
+  };
+
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <header className="flex justify-between items-center mb-6">
@@ -39,7 +75,7 @@ function ParticipantsPage({ onLogout }) {
       <div>
         <button
           className="mb-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-          onClick={() => alert('Add Participant form to be implemented')}
+          onClick={handleAddClick}
         >
           Add Participant
         </button>
@@ -64,13 +100,13 @@ function ParticipantsPage({ onLogout }) {
                 <td className="border border-gray-300 px-4 py-2">
                   <button
                     className="mr-2 text-blue-600 hover:underline"
-                    onClick={() => alert('Edit Participant form to be implemented')}
+                    onClick={() => handleEditClick(participant)}
                   >
                     Edit
                   </button>
                   <button
                     className="text-red-600 hover:underline"
-                    onClick={() => alert('Delete Participant confirmation to be implemented')}
+                    onClick={() => handleDeleteClick(participant.id)}
                   >
                     Delete
                   </button>
@@ -87,6 +123,13 @@ function ParticipantsPage({ onLogout }) {
           </tbody>
         </table>
       </div>
+      {showForm && (
+        <AddEditParticipantForm
+          participant={editingParticipant}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
   );
 }

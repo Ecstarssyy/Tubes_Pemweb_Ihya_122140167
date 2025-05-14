@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
+import AddEditEventForm from '../components/AddEditEventForm';
 
 function EventsPage({ onLogout }) {
   const [events, setEvents] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
 
   // Placeholder: Fetch events from backend API
   useEffect(() => {
@@ -27,6 +30,39 @@ function EventsPage({ onLogout }) {
     ]);
   }, []);
 
+  const handleAddClick = () => {
+    setEditingEvent(null);
+    setShowForm(true);
+  };
+
+  const handleEditClick = (event) => {
+    setEditingEvent(event);
+    setShowForm(true);
+  };
+
+  const handleDeleteClick = (id) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      setEvents(events.filter((event) => event.id !== id));
+    }
+  };
+
+  const handleSave = (event) => {
+    if (editingEvent) {
+      // Edit existing event
+      setEvents(events.map((e) => (e.id === event.id ? event : e)));
+    } else {
+      // Add new event
+      setEvents([...events, event]);
+    }
+    setShowForm(false);
+    setEditingEvent(null);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingEvent(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar onLogout={onLogout} />
@@ -35,7 +71,7 @@ function EventsPage({ onLogout }) {
           <h1 className="text-3xl font-bold">Events</h1>
           <button
             className="mb-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-            onClick={() => alert('Add Event form to be implemented')}
+            onClick={handleAddClick}
           >
             Add Event
           </button>
@@ -63,13 +99,13 @@ function EventsPage({ onLogout }) {
                 <td className="border border-gray-300 px-4 py-2">
                   <button
                     className="mr-2 text-blue-600 hover:underline"
-                    onClick={() => alert('Edit Event form to be implemented')}
+                    onClick={() => handleEditClick(event)}
                   >
                     Edit
                   </button>
                   <button
                     className="text-red-600 hover:underline"
-                    onClick={() => alert('Delete Event confirmation to be implemented')}
+                    onClick={() => handleDeleteClick(event.id)}
                   >
                     Delete
                   </button>
@@ -86,7 +122,15 @@ function EventsPage({ onLogout }) {
           </tbody>
         </table>
       </main>
+      {showForm && (
+        <AddEditEventForm
+          event={editingEvent}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      )}
     </div>
   );
 }
 
+export default EventsPage;

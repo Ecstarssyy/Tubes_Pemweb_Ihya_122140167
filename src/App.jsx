@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import EventsPage from './pages/EventsPage';
 import ParticipantsPage from './pages/ParticipantsPage';
 import LandingPage from './pages/LandingPage';
+import Navbar from './components/Navbar';
 
 function App() {
   // For simplicity, using local state for authentication status
@@ -25,16 +26,22 @@ function App() {
         <Route
           path="/events"
           element={
-            isAuthenticated ? <EventsPage onLogout={handleLogout} /> : <Navigate to="/login" />
+            <>
+              <Navbar onLogout={isAuthenticated ? handleLogout : undefined} />
+              <EventsPage isAdmin={isAuthenticated} onLogout={handleLogout} />
+            </>
           }
         />
         <Route
           path="/participants"
           element={
-            isAuthenticated ? <ParticipantsPage onLogout={handleLogout} /> : <Navigate to="/login" />
+            <>
+              <Navbar onLogout={isAuthenticated ? handleLogout : undefined} />
+              <ParticipantsPage isAdmin={isAuthenticated} onLogout={handleLogout} />
+            </>
           }
         />
-        <Route path="*" element={<Navigate to={isAuthenticated ? "/events" : "/login"} />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
