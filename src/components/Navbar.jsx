@@ -1,10 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-function Navbar({ onLogout }) {
+function Navbar({ user, onLogout }) {
   return (
     <nav className="bg-orange-600 text-white px-6 py-4 flex justify-between items-center">
-      <div className="text-xl font-bold">EventOrganizer</div>
+      <div className="flex items-center space-x-4">
+        <div className="text-xl font-bold">EventOrganizer</div>
+        {user && <span className="text-sm">Welcome, {user.username}</span>}
+      </div>
       <div className="space-x-6">
         <NavLink
           to="/events"
