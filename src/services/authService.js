@@ -6,6 +6,18 @@ let users = [
 ];
 
 export const AuthService = {
+  // Mock API call to check if the user is logged in
+  isLoggedIn: async () => {
+    // Return true if the user is logged in,
+    // otherwise return false
+    try {
+      const response = await api.get('/auth/check');
+      return response.data.isLoggedIn;
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      return false;
+    }
+  },
   login: async (username, password) => {
     try {
       const user = users.find(u => u.username === username && u.password === password);
