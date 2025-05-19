@@ -4,7 +4,6 @@ import LoginPage from './pages/LoginPage';
 import EventsPage from './pages/EventsPage';
 import ParticipantsPage from './pages/ParticipantsPage';
 import LandingPage from './pages/LandingPage';
-import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthService } from './services/authService';
 
@@ -63,24 +62,20 @@ function App() {
               <LoginPage onLogin={handleLogin} />
             )
           }
-        />        <Route
+        />
+        <Route
           path="/events"
           element={
             <ProtectedRoute user={user}>
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <EventsPage />
-              </>
+              <EventsPage onLogout={handleLogout} />
             </ProtectedRoute>
           }
-        />        <Route
+        />
+        <Route
           path="/participants"
           element={
             <ProtectedRoute user={user}>
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <ParticipantsPage />
-              </>
+              <ParticipantsPage onLogout={handleLogout} />
             </ProtectedRoute>
           }
         />

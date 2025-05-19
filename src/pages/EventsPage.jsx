@@ -10,6 +10,9 @@ function EventsPage({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('user'));
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -74,8 +77,9 @@ function EventsPage({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar onLogout={onLogout} />      <main className="p-6">
+    <div>
+      <Navbar user={user} onLogout={onLogout} />
+      <div className="container mx-auto px-4 py-8">
         <header className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Events</h1>
           <button
@@ -154,7 +158,7 @@ function EventsPage({ onLogout }) {
             )}
           </tbody>
         </table>
-      </main>
+      </div>
       {showForm && (
         <AddEditEventForm
           event={editingEvent}

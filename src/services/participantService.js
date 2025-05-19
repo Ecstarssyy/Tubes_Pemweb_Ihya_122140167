@@ -1,53 +1,43 @@
 import api from './api';
 
 export const ParticipantService = {
-  getAllParticipants: async () => {
+  getEventParticipants: async (eventId) => {
     try {
-      const response = await api.get('/participants');
+      const response = await api.get(`/events/${eventId}/participants`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      console.error('Get participants error:', error);
       throw error;
     }
   },
 
-  getParticipantById: async (id) => {
+  createParticipant: async (eventId, participantData) => {
     try {
-      const response = await api.get(`/participants/${id}`);
+      const response = await api.post(`/events/${eventId}/participants`, participantData);
       return response.data;
     } catch (error) {
-      console.error('Error fetching participant:', error);
+      console.error('Create participant error:', error);
       throw error;
     }
   },
 
-  createParticipant: async (participantData) => {
+  updateParticipant: async (eventId, participantId, participantData) => {
     try {
-      const response = await api.post('/participants', participantData);
+      const response = await api.put(`/events/${eventId}/participants/${participantId}`, participantData);
       return response.data;
     } catch (error) {
-      console.error('Error creating participant:', error);
+      console.error('Update participant error:', error);
       throw error;
     }
   },
 
-  updateParticipant: async (id, participantData) => {
+  deleteParticipant: async (eventId, participantId) => {
     try {
-      const response = await api.put(`/participants/${id}`, participantData);
-      return response.data;
+      await api.delete(`/events/${eventId}/participants/${participantId}`);
+      return true;
     } catch (error) {
-      console.error('Error updating participant:', error);
+      console.error('Delete participant error:', error);
       throw error;
     }
-  },
-
-  deleteParticipant: async (id) => {
-    try {
-      const response = await api.delete(`/participants/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting participant:', error);
-      throw error;
-    }
-  },
+  }
 };
