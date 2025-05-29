@@ -1,4 +1,4 @@
-import api from './api';
+import * as api from './api';
 
 export const ParticipantService = {
   getEventParticipants: async (eventId) => {

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-function AddEditEventForm({ event, onSave, onCancel }) {
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('Upcoming');
+const AddEditEventForm = ({ event, onSave, onCancel }) => {
+  const [name, setName] = useState(event ? event.name : '');
+  const [date, setDate] = useState(event ? event.date : '');
+  const [location, setLocation] = useState(event ? event.location : '');
+  const [description, setDescription] = useState(event ? event.description : '');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (event) {
@@ -13,109 +13,81 @@ function AddEditEventForm({ event, onSave, onCancel }) {
       setDate(event.date);
       setLocation(event.location);
       setDescription(event.description);
-      setStatus(event.status);
-    } else {
-      setName('');
-      setDate('');
-      setLocation('');
-      setDescription('');
-      setStatus('Upcoming');
     }
   }, [event]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !date || !location || !description || !status) {
-      alert('Please fill in all fields');
+    if (!name || !date || !location) {
+      setError('Please fill in all required fields.');
       return;
     }
-    onSave({
-      id: event ? event.id : Date.now(),
-      name,
-      date,
-      location,
-      description,
-      status,
-    });
+    setError('');
+    onSave({ name, date, location, description });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-full max-w-md"
-      >
-        <h2 className="text-xl font-bold mb-4">{event ? 'Edit Event' : 'Add Event'}</h2>
-        <div className="mb-3">
-          <label className="block font-semibold mb-1" htmlFor="name">Name</label>
+    <div className="max-w-lg mx-auto p-6 border rounded shadow bg-white">
+      <h2 className="text-xl font-bold mb-4">{event ? 'Edit Event' : 'Add Event'}</h2>
+      {error && <div className="mb-4 text-red-600">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label className="block mb-1 font-semibold">Event Name *</label>
           <input
-            id="name"
             type="text"
-            className="w-full border border-gray-300 rounded px-3 py-2"
             value={name}
             onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div className="mb-3">
-          <label className="block font-semibold mb-1" htmlFor="date">Date</label>
-          <input
-            id="date"
-            type="date"
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-        <div className="mb-3">
-          <label className="block font-semibold mb-1" htmlFor="location">Location</label>
-          <input
-            id="location"
-            type="text"
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
-        </div>
-        <div className="mb-3">
-          <label className="block font-semibold mb-1" htmlFor="description">Description</label>
-          <textarea
-            id="description"
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
           />
         </div>
         <div className="mb-4">
-          <label className="block font-semibold mb-1" htmlFor="status">Status</label>
-          <select
-            id="status"
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="Upcoming">Upcoming</option>
-            <option value="Ongoing">Ongoing</option>
-            <option value="Completed">Completed</option>
-          </select>
+          <label className="block mb-1 font-semibold">Date *</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
         </div>
-        <div className="flex justify-end space-x-3">
+        <div className="mb-4">
+          <label className="block mb-1 font-semibold">Location *</label>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            required
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block mb-1 font-semibold">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+            rows={4}
+          />
+        </div>
+        <div className="flex justify-end space-x-4">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition"
+            className="px-4 py-2 rounded border border-gray-400 hover:bg-gray-100"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
           >
-            Save
+            {event ? 'Update' : 'Add'}
           </button>
         </div>
       </form>
     </div>
   );
-}
+};
 
 export default AddEditEventForm;

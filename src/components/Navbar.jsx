@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-function Navbar({ user, onLogout }) {
+function Navbar({ user, onLogout, eventId }) {
   return (
     <nav className="bg-orange-600 text-white px-6 py-4 flex justify-between items-center">
       <div className="flex items-center space-x-4">
@@ -17,14 +17,16 @@ function Navbar({ user, onLogout }) {
         >
           Events
         </NavLink>
-        <NavLink
-          to="/participants"
-          className={({ isActive }) =>
-            isActive ? 'underline font-semibold' : 'hover:underline'
-          }
-        >
-          Participants
-        </NavLink>
+        {user && user.role === 'admin' && eventId && (
+          <NavLink
+            to={`/events/${eventId}/participants`}
+            className={({ isActive }) =>
+              isActive ? 'underline font-semibold' : 'hover:underline'
+            }
+          >
+            Participants
+          </NavLink>
+        )}
         <button
           onClick={onLogout}
           className="bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition"
@@ -37,5 +39,3 @@ function Navbar({ user, onLogout }) {
 }
 
 export default Navbar;
-
-

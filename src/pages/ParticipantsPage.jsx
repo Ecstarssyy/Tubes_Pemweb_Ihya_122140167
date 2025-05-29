@@ -1,25 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
 import AddEditParticipantForm from '../components/AddEditParticipantForm';
 import { ParticipantService } from '../services/participantService';
 import ErrorMessage from '../components/ErrorMessage';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-function ParticipantsPage({ onLogout }) {
+function ParticipantsPage({ onLogout, eventId }) {
   const [participants, setParticipants] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingParticipant, setEditingParticipant] = useState(null);  const [loading, setLoading] = useState(true);
+  const [editingParticipant, setEditingParticipant] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = user && user.role === 'admin';
+
   useEffect(() => {
-    fetchParticipants();
-  }, []);
+    if (eventId) {
+      fetchParticipants();
+    }
+  }, [eventId]);
 
   const fetchParticipants = async () => {
     try {
       setLoading(true);
-      const data = await ParticipantService.getAllParticipants();
+      let data = await ParticipantService.getEventParticipants(eventId);
+      if (!isAdmin) {
+        // Filter participants to only those matching logged-in user's email
+        data = data.filter(p => p.email === user.email);
+      }
       setParticipants(data);
       setError(null);
     } catch (err) {
@@ -38,11 +48,14 @@ function ParticipantsPage({ onLogout }) {
   const handleEditClick = (participant) => {
     setEditingParticipant(participant);
     setShowForm(true);
-  };  const handleDeleteClick = async (id) => {
+  };
+
+  const handleDeleteClick = async (id) => {
+    if (!isAdmin) return; // Only admin can delete
     if (window.confirm('Are you sure you want to delete this participant? This action cannot be undone.')) {
       try {
         setActionLoading(true);
-        await ParticipantService.deleteParticipant(id);
+        await ParticipantService.deleteParticipant(eventId, id);
         setParticipants(participants.filter((p) => p.id !== id));
         setError(null);
       } catch (err) {
@@ -53,12 +66,15 @@ function ParticipantsPage({ onLogout }) {
       }
     }
   };
+
   const handleSave = async (participantData) => {
+    if (!isAdmin) return; // Only admin can save
     try {
       setActionLoading(true);
       if (editingParticipant) {
         // Edit existing participant
         const updatedParticipant = await ParticipantService.updateParticipant(
+          eventId,
           editingParticipant.id,
           participantData
         );
@@ -67,7 +83,7 @@ function ParticipantsPage({ onLogout }) {
         ));
       } else {
         // Add new participant
-        const newParticipant = await ParticipantService.createParticipant(participantData);
+        const newParticipant = await ParticipantService.createParticipant(eventId, participantData);
         setParticipants([...participants, newParticipant]);
       }
       setShowForm(false);
@@ -86,12 +102,9 @@ function ParticipantsPage({ onLogout }) {
     setEditingParticipant(null);
   };
 
-  // Get user from localStorage
-  const user = JSON.parse(localStorage.getItem('user'));
-
   return (
     <div>
-      <Navbar user={user} onLogout={onLogout} />
+      {/* Removed duplicate Navbar */}
       <div className="container mx-auto px-4 py-8">
         <header className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Participants</h1>
@@ -101,7 +114,8 @@ function ParticipantsPage({ onLogout }) {
           >
             Logout
           </button>
-        </header>      <div>
+        </header>
+        <div>
           {error && (
             <ErrorMessage
               message={error}
@@ -110,13 +124,15 @@ function ParticipantsPage({ onLogout }) {
           )}
 
           <div className="flex justify-between items-center mb-4">
-            <button
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
-              onClick={handleAddClick}
-              disabled={actionLoading}
-            >
-              {actionLoading ? 'Processing...' : 'Add Participant'}
-            </button>
+            {isAdmin && (
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50"
+                onClick={handleAddClick}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Processing...' : 'Add Participant'}
+              </button>
+            )}
 
             <button
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
@@ -125,16 +141,18 @@ function ParticipantsPage({ onLogout }) {
             >
               Refresh List
             </button>
-          </div>        {loading ? (
+          </div>
+          {loading ? (
             <LoadingSpinner />
-          ) : (<table className="w-full border-collapse border border-gray-300">
+          ) : (
+            <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-200">
                   <th className="border border-gray-300 px-4 py-2">Name</th>
                   <th className="border border-gray-300 px-4 py-2">Email</th>
                   <th className="border border-gray-300 px-4 py-2">Phone</th>
                   <th className="border border-gray-300 px-4 py-2">Attendance Status</th>
-                  <th className="border border-gray-300 px-4 py-2">Actions</th>
+                  {isAdmin && <th className="border border-gray-300 px-4 py-2">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -144,26 +162,29 @@ function ParticipantsPage({ onLogout }) {
                     <td className="border border-gray-300 px-4 py-2">{participant.email}</td>
                     <td className="border border-gray-300 px-4 py-2">{participant.phone}</td>
                     <td className="border border-gray-300 px-4 py-2">{participant.attendanceStatus}</td>
-                    <td className="border border-gray-300 px-4 py-2">                  <button
-                      className="mr-2 text-blue-600 hover:underline disabled:opacity-50 disabled:no-underline"
-                      onClick={() => handleEditClick(participant)}
-                      disabled={actionLoading}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="text-red-600 hover:underline disabled:opacity-50 disabled:no-underline"
-                      onClick={() => handleDeleteClick(participant.id)}
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? 'Processing...' : 'Delete'}
-                    </button>
-                    </td>
+                    {isAdmin && (
+                      <td className="border border-gray-300 px-4 py-2">
+                        <button
+                          className="mr-2 text-blue-600 hover:underline disabled:opacity-50 disabled:no-underline"
+                          onClick={() => handleEditClick(participant)}
+                          disabled={actionLoading}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-red-600 hover:underline disabled:opacity-50 disabled:no-underline"
+                          onClick={() => handleDeleteClick(participant.id)}
+                          disabled={actionLoading}
+                        >
+                          {actionLoading ? 'Processing...' : 'Delete'}
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {participants.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="text-center py-4">
+                    <td colSpan={isAdmin ? "5" : "4"} className="text-center py-4">
                       No participants found.
                     </td>
                   </tr>
@@ -173,7 +194,7 @@ function ParticipantsPage({ onLogout }) {
           )}
         </div>
 
-        {showForm && (
+        {showForm && isAdmin && (
           <AddEditParticipantForm
             participant={editingParticipant}
             onSave={handleSave}

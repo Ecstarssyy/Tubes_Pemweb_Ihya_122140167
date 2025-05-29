@@ -1,0 +1,3 @@
+[run]
+source = event_backend
+omit = event_backend/test*

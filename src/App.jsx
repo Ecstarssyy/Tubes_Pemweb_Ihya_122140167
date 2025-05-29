@@ -1,15 +1,32 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import EventsPage from './pages/EventsPage';
+import EventDetailPage from './pages/EventDetailPage';
 import ParticipantsPage from './pages/ParticipantsPage';
 import LandingPage from './pages/LandingPage';
+import CategoryPage from './pages/CategoryPage';
+import SearchResultsPage from './pages/SearchResultsPage';
+import EventSettingsPage from './pages/EventSettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthService } from './services/authService';
+import Navbar from './components/Navbar';
+import ErrorBoundary from './components/ErrorBoundary';
+
+function AppWrapper() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}
 
 function App() {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  const navigate = useNavigate();
+  const params = useParams();
+  const eventId = params.eventId || null;
 
   React.useEffect(() => {
     // Check for stored user session
@@ -36,6 +53,7 @@ function App() {
       await AuthService.logout();
       setUser(null);
       localStorage.removeItem('user');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -50,7 +68,8 @@ function App() {
   }
 
   return (
-    <Router>
+    <ErrorBoundary>
+      {user && <Navbar user={user} onLogout={handleLogout} eventId={eventId} />}
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
@@ -63,26 +82,37 @@ function App() {
             )
           }
         />
+        {/* Public routes */}
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:eventId" element={<EventDetailPage />} />
+        {/* Protected admin routes */}
         <Route
-          path="/events"
+          path="/events/:eventId/participants"
           element={
-            <ProtectedRoute user={user}>
-              <EventsPage onLogout={handleLogout} />
+            <ProtectedRoute user={user} requiredRole="admin">
+              <ParticipantsPageWrapper onLogout={handleLogout} />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/participants"
+          path="/event-settings"
           element={
-            <ProtectedRoute user={user}>
-              <ParticipantsPage onLogout={handleLogout} />
+            <ProtectedRoute user={user} requiredRole="admin">
+              <EventSettingsPage />
             </ProtectedRoute>
           }
         />
+        <Route path="/category/:categoryName" element={<CategoryPage />} />
+        <Route path="/search" element={<SearchResultsPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </Router>
+    </ErrorBoundary>
   );
 }
 
-export default App;
+function ParticipantsPageWrapper({ onLogout }) {
+  const { eventId } = useParams();
+  return <ParticipantsPage onLogout={onLogout} eventId={eventId} />;
+}
+
+export default AppWrapper;
