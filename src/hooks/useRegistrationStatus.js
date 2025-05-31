@@ -1,9 +1,11 @@
+// src/hooks/useRegistrationStatus.js
 import { useState, useEffect, useCallback } from 'react';
-import { getRegistrationStats } from '../services/eventService';
+import { getRegistrationStats } from '../services/eventService'; //
 
-const POLLING_INTERVAL = 30000; // 30 seconds
-const MAX_RETRIES = 3;
+const POLLING_INTERVAL = 30000; // 30 detik (tetap)
+const MAX_RETRIES = 3; // (tetap)
 
+// fetchWithRetry tetap bisa digunakan
 const fetchWithRetry = async (fetchFunction, maxRetries = MAX_RETRIES) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -17,27 +19,41 @@ const fetchWithRetry = async (fetchFunction, maxRetries = MAX_RETRIES) => {
 
 export const useRegistrationStatus = (eventId) => {
   const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Awalnya true saat pertama kali load
   const [error, setError] = useState(null);
 
   const fetchStatus = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchWithRetry(() => getRegistrationStats(eventId));
-      setStatus(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message || 'Failed to load registration status.');
-    } finally {
+    if (!eventId) {
+      setError("Event ID tidak valid untuk status registrasi.");
       setLoading(false);
+      setStatus(null);
+      return;
+    }
+    // Tidak set loading true di sini agar polling tidak selalu menunjukkan spinner besar
+    // kecuali untuk pemanggilan awal.
+    // setLoading(true); // Mungkin tidak perlu untuk setiap poll, hanya initial load.
+    setError(null);
+    try {
+      const data = await fetchWithRetry(() => getRegistrationStats(eventId));
+      setStatus(data); // Backend dummy kini mengembalikan struktur yang lebih baik
+    } catch (err) {
+      console.error(`Error in useRegistrationStatus for eventId ${eventId}:`, err);
+      setError(err.message || 'Gagal memuat status registrasi event.');
+      // Jangan setStatus ke null agar data lama tetap tampil saat polling gagal,
+      // kecuali jika ini adalah error kritis pertama.
+      // setStatus(null); 
+    } finally {
+      // setLoading(false); // Hanya set false jika ini adalah initial load
     }
   }, [eventId]);
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, POLLING_INTERVAL);
-    return () => clearInterval(interval);
-  }, [fetchStatus]);
+    setLoading(true); // Set loading true hanya untuk pemanggilan awal
+    fetchStatus().finally(() => setLoading(false)); // Pastikan loading false setelah fetch awal selesai
+
+    const intervalId = setInterval(fetchStatus, POLLING_INTERVAL);
+    return () => clearInterval(intervalId);
+  }, [fetchStatus]); // fetchStatus sudah di-memoize dengan eventId
 
   return { status, loading, error, refetch: fetchStatus };
 };

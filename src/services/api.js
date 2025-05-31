@@ -1,77 +1,58 @@
-const API_BASE_URL = 'http://127.0.0.1:6543/api';
+// src/services/api.js
+const API_BASE_URL = 'http://localhost:6543'; // Pastikan ini base URL yang benar untuk Pyramid
 
-export async function fetchEvents() {
-  const response = await fetch(\`\${API_BASE_URL}/events\`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch events');
+async function request(endpoint, method = 'GET', data = null, customHeaders = {}) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const token = localStorage.getItem('authToken');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...customHeaders,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`; 
   }
-  return response.json();
+
+  const config = {
+    method: method,
+    headers: headers,
+  };
+
+  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    config.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(url, config);
+    
+    if (response.status === 204 || response.headers.get('Content-Length') === '0') {
+        return null; 
+    }
+
+    const responseData = await response.json().catch(e => {
+        console.error("Failed to parse JSON response for URL:", url, "Status:", response.status, e);
+        throw new Error(`Server returned non-JSON response or network error. Status: ${response.status} ${response.statusText}`);
+    });
+
+    if (!response.ok) {
+      const errorMessage = responseData?.error || responseData?.message || response.statusText || `Error ${response.status}`;
+      throw new Error(`API Error: ${response.status} - ${errorMessage}`);
+    }
+    
+    return responseData;
+  } catch (error) {
+    let errorToThrow = error;
+    if (!(error instanceof Error && error.message.startsWith('API Error:'))) {
+        errorToThrow = new Error(`Network or unexpected error during API request to ${method} ${url}: ${error.message}`);
+    }
+    console.error(errorToThrow.message, error);
+    throw errorToThrow; 
+  }
 }
 
-export async function fetchEventDetail(eventId) {
-  const response = await fetch(\`\${API_BASE_URL}/events/\${eventId}\`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch event detail');
-  }
-  return response.json();
-}
-
-export async function fetchParticipants(eventId) {
-  const response = await fetch(\`\${API_BASE_URL}/events/\${eventId}/participants\`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch participants');
-  }
-  return response.json();
-}
-
-export async function addParticipant(eventId, participantData) {
-  const response = await fetch(\`\${API_BASE_URL}/events/\${eventId}/participants\`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(participantData)
-  });
-  if (!response.ok) {
-    throw new Error('Failed to add participant');
-  }
-  return response.json();
-}
-
-export async function login(credentials) {
-  const response = await fetch(\`\${API_BASE_URL}/login\`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(credentials)
-  });
-  if (!response.ok) {
-    throw new Error('Login failed');
-  }
-  return response.json();
-}
-
-export async function logout() {
-  const response = await fetch(\`\${API_BASE_URL}/logout\`, {
-    method: 'POST'
-  });
-  if (!response.ok) {
-    throw new Error('Logout failed');
-  }
-  return response.json();
-}
-
-export async function register(userData) {
-  const response = await fetch(\`\${API_BASE_URL}/register\`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(userData)
-  });
-  if (!response.ok) {
-    throw new Error('Registration failed');
-  }
-  return response.json();
-}
+// PASTIKAN BAGIAN EXPORT INI ADA DAN BENAR:
+export const get = (endpoint, headers) => request(endpoint, 'GET', null, headers);
+export const post = (endpoint, data, headers) => request(endpoint, 'POST', data, headers);
+export const put = (endpoint, data, headers) => request(endpoint, 'PUT', data, headers);
+export const del = (endpoint, headers) => request(endpoint, 'DELETE', null, headers); // 'delete' adalah reserved keyword

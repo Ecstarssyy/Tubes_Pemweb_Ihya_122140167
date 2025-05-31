@@ -8,6 +8,6 @@ def main(global_config, **settings):
         config.include('pyramid_jinja2')
         config.include('.models')
         config.include('.routes')
-        config.include('.views')
+        # Removed config.include('.views') because event_backend.views has no includeme
         config.scan()
     return config.make_wsgi_app()

@@ -1,130 +1,137 @@
-import * as api from './api';
+// src/services/eventService.js
+import { get, post, put, del } from './api';
 
-export const fetchEventsData = async (filters = {}, sortKey = 'date', page = 1, perPage = 3) => {
+export const fetchEventsData = async (filters = {}, sortKey = 'date', page = 1, perPage = 9) => {
   try {
-    const response = await api.get('/events');
-    let events = response;
+    // Backend dummy saat ini mengembalikan semua event tanpa pagination/filtering server-side
+    // Endpoint: GET /api/events
+    const backendResponse = await get('/api/events'); 
+    let allEvents = backendResponse.events || []; 
+    const totalFromBackend = backendResponse.total || allEvents.length; // Jika backend berikan total
 
-    // Apply filters locally since backend is in-memory and does not support filtering
+    // --- Implementasi Filter, Sort, Paginate di Frontend (SAMA SEPERTI SEBELUMNYA) ---
     if (filters.category) {
-      events = events.filter(event => event.category === filters.category);
+      allEvents = allEvents.filter(event => event.category && event.category.toLowerCase() === filters.category.toLowerCase());
     }
     if (filters.location) {
-      events = events.filter(event => event.location.toLowerCase().includes(filters.location.toLowerCase()));
+      allEvents = allEvents.filter(event => event.location && event.location.toLowerCase().includes(filters.location.toLowerCase()));
     }
     if (filters.priceMin) {
-      events = events.filter(event => event.price >= Number(filters.priceMin));
+      allEvents = allEvents.filter(event => typeof event.price === 'number' && event.price >= Number(filters.priceMin));
     }
     if (filters.priceMax) {
-      events = events.filter(event => event.price <= Number(filters.priceMax));
+        allEvents = allEvents.filter(event => typeof event.price === 'number' && event.price <= Number(filters.priceMax));
     }
     if (filters.dateFrom) {
-      events = events.filter(event => event.date >= filters.dateFrom);
+        allEvents = allEvents.filter(event => event.date && new Date(event.date) >= new Date(filters.dateFrom));
     }
     if (filters.dateTo) {
-      events = events.filter(event => event.date <= filters.dateTo);
+        allEvents = allEvents.filter(event => event.date && new Date(event.date) <= new Date(filters.dateTo));
     }
 
-    // Sorting
     if (sortKey === 'date') {
-      events.sort((a, b) => new Date(a.date) - new Date(b.date));
+      allEvents.sort((a, b) => new Date(a.start_date || a.date) - new Date(b.start_date || b.date));
     } else if (sortKey === 'price') {
-      events.sort((a, b) => a.price - b.price);
+      allEvents.sort((a, b) => (a.price || 0) - (b.price || 0));
     } else if (sortKey === 'title') {
-      events.sort((a, b) => a.title.localeCompare(b.title));
+      allEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     }
+    // --- END Implementasi Filter, Sort, Paginate di Frontend ---
 
-    // Pagination
-    const total = events.length;
+    const totalFiltered = allEvents.length; // Total setelah filter frontend
     const start = (page - 1) * perPage;
     const end = start + perPage;
-    const paginatedEvents = events.slice(start, end);
+    const paginatedEvents = allEvents.slice(start, end);
 
-    return { events: paginatedEvents, total };
+    // Kembalikan totalFiltered agar pagination sesuai dengan hasil filter frontend
+    return { events: paginatedEvents, total: totalFiltered };
+
   } catch (error) {
-    console.error('Fetch events error:', error);
+    console.error('Fetch events error in eventService:', error);
     throw error;
   }
 };
 
 export const fetchEvent = async (eventId) => {
   try {
-    const response = await api.get(`/events/${eventId}`);
-    return response;
+    // Endpoint: GET /api/events/{event_id}
+    return await get(`/api/events/${eventId}`);
   } catch (error) {
-    console.error('Fetch event error:', error);
+    console.error(`Fetch event detail error for eventId ${eventId}:`, error);
     throw error;
   }
 };
 
 export const createEvent = async (eventData) => {
   try {
-    const response = await api.post('/events', eventData);
-    return response;
+    // Endpoint: POST /api/events
+    return await post('/api/events', eventData);
   } catch (error) {
-    console.error('Create event error:', error);
+    console.error('Create event error in eventService:', error);
     throw error;
   }
 };
 
 export const updateEvent = async (eventId, eventData) => {
   try {
-    const response = await api.put(`/events/${eventId}`, eventData);
-    return response;
+    // Endpoint: PUT /api/events/{event_id}
+    return await put(`/api/events/${eventId}`, eventData);
   } catch (error) {
-    console.error('Update event error:', error);
+    console.error(`Update event error for eventId ${eventId}:`, error);
     throw error;
   }
 };
 
 export const deleteEvent = async (eventId) => {
   try {
-    await api.delete(`/events/${eventId}`);
-    return true;
+    // Endpoint: DELETE /api/events/{event_id}
+    await del(`/api/events/${eventId}`); // del tidak mengembalikan body jika sukses (204)
+    return { success: true, message: 'Event berhasil dihapus.' }; 
   } catch (error) {
-    console.error('Delete event error:', error);
+    console.error(`Delete event error for eventId ${eventId}:`, error);
     throw error;
   }
 };
 
-// New API methods for Event Detail Page data fetching
-
+// API methods untuk Event Detail Page
 export const getRegistrationStats = async (eventId) => {
   try {
-    const response = await api.get(`/events/${eventId}/registration-stats`);
-    return response;
+    // Endpoint: GET /api/events/{event_id}/registration-stats
+    return await get(`/api/events/${eventId}/registration-stats`);
   } catch (error) {
-    console.error('Fetch registration stats error:', error);
-    throw error;
+    console.error(`Fetch registration stats error for ${eventId}:`, error);
+    // Jangan kembalikan data dummy di service, biarkan hook atau komponen yang memutuskan
+    throw error; 
   }
 };
 
 export const getUserRegistration = async (eventId) => {
   try {
-    const response = await api.get(`/users/me/events/${eventId}/registration`);
-    return response;
+    // Endpoint: GET /api/users/me/events/{event_id}/registration
+    // Backend akan menggunakan token auth untuk identifikasi user
+    return await get(`/api/users/me/events/${eventId}/registration`);
   } catch (error) {
-    console.error('Fetch user registration error:', error);
+    console.error(`Fetch user registration error for ${eventId}:`, error);
     throw error;
   }
 };
 
 export const getParticipants = async (eventId, limit = 10) => {
   try {
-    const response = await api.get(`/events/${eventId}/participants?limit=${limit}`);
-    return response;
+    // Endpoint: GET /api/events/{event_id}/participants?limit={limit}
+    return await get(`/api/events/${eventId}/participants?limit=${limit}`); // Respons: { "participants": [...], "total": ... }
   } catch (error) {
-    console.error('Fetch participants error:', error);
+    console.error(`Fetch participants error for ${eventId}:`, error);
     throw error;
   }
 };
 
 export const getRelatedEvents = async (eventId, limit = 3) => {
   try {
-    const response = await api.get(`/events/${eventId}/related?limit=${limit}`);
-    return response;
+    // Endpoint: GET /api/events/{event_id}/related?limit={limit}
+    return await get(`/api/events/${eventId}/related?limit=${limit}`); // Respons: { "events": [...] }
   } catch (error) {
-    console.error('Fetch related events error:', error);
+    console.error(`Fetch related events error for ${eventId}:`, error);
     throw error;
   }
 };

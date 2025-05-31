@@ -6,12 +6,6 @@ export default defineConfig({
   server: {
     open: true,
     port: 3000,
-    strictPort: false,
-  },
-  resolve: {
-    alias: {
-      '@': '/src',
-    },
   },
   css: {
     postcss: './postcss.config.js',
